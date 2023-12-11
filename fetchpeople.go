@@ -41,7 +41,6 @@ func FetchPeople(url string) ([]Person, error) {
 	req.Header.SetMethod("GET")
 
 	if err := fasthttp.Do(req, resp); err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
