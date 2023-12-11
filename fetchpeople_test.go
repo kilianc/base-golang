@@ -20,7 +20,7 @@ func TestFetchPeople(t *testing.T) {
 
 	t.Run("should return an error when it fails", func(t *testing.T) {
 		stub := func(_ *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response) error {
-			return fmt.Errorf("error")
+			return fmt.Errorf("test-error")
 		}
 
 		gm.ApplyMethod(reflect.TypeOf(&fasthttp.Client{}), "Do", stub)
