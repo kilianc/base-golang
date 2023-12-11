@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -19,11 +18,11 @@ func TestFetchPeople(t *testing.T) {
 	})
 
 	t.Run("should return an error when it fails", func(t *testing.T) {
-		stub := func(_ *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response) error {
+		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
 			return fmt.Errorf("test-error")
 		}
 
-		gm.ApplyMethod(reflect.TypeOf(&fasthttp.Client{}), "Do", stub)
+		gm.ApplyFunc(fasthttp.Do, stub)
 		defer gm.Reset()
 
 		result, err := FetchPeople("http://test-url")
@@ -33,15 +32,15 @@ func TestFetchPeople(t *testing.T) {
 
 	t.Run("should return a list of people", func(t *testing.T) {
 		calledWithUrl := "initial value"
+		responseBody := "[{\"id\": 1, \"name\": \"test-name\", \"email\": \"test-email\"}]"
 
-		stub := func(_ *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response) error {
+		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
 			calledWithUrl = string(req.URI().FullURI())
-			body := "[{\"id\": 1, \"name\": \"test-name\", \"email\": \"test-email\"}]"
-			resp.SetBody([]byte(body))
+			resp.SetBody([]byte(responseBody))
 			return nil
 		}
 
-		gm.ApplyMethod(reflect.TypeOf(&fasthttp.Client{}), "Do", stub)
+		gm.ApplyFunc(fasthttp.Do, stub)
 		defer gm.Reset()
 
 		result, err := FetchPeople("http://test-url")
