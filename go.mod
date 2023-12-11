@@ -1,4 +1,4 @@
-module github.com/kilianc/go
+module github.com/kilianc/base-golang
 
 go 1.21.5
 
