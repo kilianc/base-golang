@@ -4,28 +4,42 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/agiledragon/gomonkey/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
 )
 
 func TestFetchPeople(t *testing.T) {
-	gm := gomonkey.NewPatches()
-
 	t.Run("should return an error when url is empty", func(t *testing.T) {
-		_, err := FetchPeople("")
+		_, err := (&FetchPeople{}).Fetch("")
 		assert.Error(t, err)
 	})
 
-	t.Run("should return an error when it fails", func(t *testing.T) {
+	t.Run("should return an error when it fails (struct)", func(t *testing.T) {
 		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
 			return fmt.Errorf("test-error")
 		}
 
-		gm.ApplyFunc(fasthttp.Do, stub)
-		defer gm.Reset()
+		fetchPeople := &FetchPeople{
+			FastHTTPDo: stub,
+		}
 
-		result, err := FetchPeople("http://test-url")
+		result, err := fetchPeople.Fetch("http://test-url")
+		assert.Nil(t, result)
+		assert.Error(t, err)
+	})
+
+	t.Run("should return an error when it fails (options)", func(t *testing.T) {
+		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
+			return fmt.Errorf("test-error")
+		}
+
+		fetchPeopleOptions := FetchPeopleOptions{
+			FastHTTPDo: stub,
+		}
+
+		fetchPeople := &FetchPeople{}
+
+		result, err := fetchPeople.Fetch("http://test-url", fetchPeopleOptions)
 		assert.Nil(t, result)
 		assert.Error(t, err)
 	})
@@ -40,10 +54,11 @@ func TestFetchPeople(t *testing.T) {
 			return nil
 		}
 
-		gm.ApplyFunc(fasthttp.Do, stub)
-		defer gm.Reset()
+		fetchPeople := &FetchPeople{
+			FastHTTPDo: stub,
+		}
 
-		result, err := FetchPeople("http://test-url")
+		result, err := fetchPeople.Fetch("http://test-url")
 		assert.Nil(t, err)
 		assert.Equal(t, "http://test-url/", calledWithUrl)
 		assert.Equal(t, 1, len(result))
@@ -53,7 +68,7 @@ func TestFetchPeople(t *testing.T) {
 	})
 
 	t.Run("should return a list of people (un-mocked)", func(t *testing.T) {
-		result, err := FetchPeople("https://jsonplaceholder.typicode.com/users")
+		result, err := (&FetchPeople{}).Fetch("https://jsonplaceholder.typicode.com/users")
 		assert.Nil(t, err)
 		assert.Equal(t, 10, len(result))
 	})

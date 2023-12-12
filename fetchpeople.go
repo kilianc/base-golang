@@ -7,27 +7,24 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type FetchResult struct {
-	People []Person
-	Err    error
+type FetchPeople struct {
+	FastHTTPDo func(req *fasthttp.Request, resp *fasthttp.Response) error
 }
 
-func (ar FetchResult) Unwrap() ([]Person, error) {
-	return ar.People, ar.Err
+type FetchPeopleOptions struct {
+	FastHTTPDo func(req *fasthttp.Request, resp *fasthttp.Response) error
 }
 
-func AsyncFetchPeople(url string) <-chan FetchResult {
-	done := make(chan FetchResult)
+func (f *FetchPeople) Fetch(url string, opts ...FetchPeopleOptions) ([]Person, error) {
+	// default to fasthttp.Do if not set, this is useful for testing
+	if (f.FastHTTPDo) == nil {
+		f.FastHTTPDo = fasthttp.Do
+	}
 
-	go func() {
-		data, err := FetchPeople(url)
-		done <- FetchResult{data, err}
-	}()
+	if len(opts) > 0 && opts[0].FastHTTPDo != nil {
+		f.FastHTTPDo = opts[0].FastHTTPDo
+	}
 
-	return done
-}
-
-func FetchPeople(url string) ([]Person, error) {
 	if url == "" {
 		return nil, fmt.Errorf("url is empty")
 	}
@@ -40,7 +37,7 @@ func FetchPeople(url string) ([]Person, error) {
 	req.SetRequestURI(url)
 	req.Header.SetMethod("GET")
 
-	if err := fasthttp.Do(req, resp); err != nil {
+	if err := f.FastHTTPDo(req, resp); err != nil {
 		return nil, err
 	}
 
@@ -54,4 +51,24 @@ func FetchPeople(url string) ([]Person, error) {
 	}
 
 	return people, nil
+}
+
+type AsyncFetchPeopleResult struct {
+	People []Person
+	Err    error
+}
+
+func (ar AsyncFetchPeopleResult) Unwrap() ([]Person, error) {
+	return ar.People, ar.Err
+}
+
+func AsyncFetchPeople(url string) <-chan AsyncFetchPeopleResult {
+	done := make(chan AsyncFetchPeopleResult)
+
+	go func() {
+		data, err := (&FetchPeople{}).Fetch(url)
+		done <- AsyncFetchPeopleResult{data, err}
+	}()
+
+	return done
 }
