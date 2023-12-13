@@ -11,7 +11,7 @@ import (
 func TestFetchPeople(t *testing.T) {
 	t.Run("should return an error when url is empty", func(t *testing.T) {
 		_, err := FetchPeople("")
-		assert.Error(t, err)
+		assert.Error(t, err, fmt.Errorf("url is empty"))
 	})
 
 	t.Run("should return an error when it fails", func(t *testing.T) {
@@ -25,7 +25,7 @@ func TestFetchPeople(t *testing.T) {
 
 		people, err := FetchPeople("http://test-url", fetchPeopleOptions)
 		assert.Nil(t, people)
-		assert.Error(t, err)
+		assert.Error(t, err, "test-error", fmt.Errorf("test-error"))
 	})
 
 	t.Run("should return a list of people", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestFetchPeople(t *testing.T) {
 func TestFetchPeopleAsync(t *testing.T) {
 	t.Run("should send error trough a channel when failing", func(t *testing.T) {
 		_, err := (<-FetchPeopleAsync("")).Unwrap()
-		assert.Error(t, err)
+		assert.Error(t, err, "url is empty", fmt.Errorf("url is empty"))
 	})
 
 	t.Run("should send results trough a channel when succeeding", func(t *testing.T) {
