@@ -10,25 +10,11 @@ import (
 
 func TestFetchPeople(t *testing.T) {
 	t.Run("should return an error when url is empty", func(t *testing.T) {
-		_, err := (&FetchPeople{}).Fetch("")
+		_, err := FetchPeople("")
 		assert.Error(t, err)
 	})
 
-	t.Run("should return an error when it fails (struct)", func(t *testing.T) {
-		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
-			return fmt.Errorf("test-error")
-		}
-
-		fetchPeople := &FetchPeople{
-			FastHTTPDo: stub,
-		}
-
-		result, err := fetchPeople.Fetch("http://test-url")
-		assert.Nil(t, result)
-		assert.Error(t, err)
-	})
-
-	t.Run("should return an error when it fails (options)", func(t *testing.T) {
+	t.Run("should return an error when it fails", func(t *testing.T) {
 		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
 			return fmt.Errorf("test-error")
 		}
@@ -37,10 +23,8 @@ func TestFetchPeople(t *testing.T) {
 			FastHTTPDo: stub,
 		}
 
-		fetchPeople := &FetchPeople{}
-
-		result, err := fetchPeople.Fetch("http://test-url", fetchPeopleOptions)
-		assert.Nil(t, result)
+		people, err := FetchPeople("http://test-url", fetchPeopleOptions)
+		assert.Nil(t, people)
 		assert.Error(t, err)
 	})
 
@@ -54,22 +38,52 @@ func TestFetchPeople(t *testing.T) {
 			return nil
 		}
 
-		fetchPeople := &FetchPeople{
+		fetchPeopleOptions := FetchPeopleOptions{
 			FastHTTPDo: stub,
 		}
 
-		result, err := fetchPeople.Fetch("http://test-url")
+		people, err := FetchPeople("http://test-url", fetchPeopleOptions)
 		assert.Nil(t, err)
 		assert.Equal(t, "http://test-url/", calledWithUrl)
-		assert.Equal(t, 1, len(result))
-		assert.Equal(t, 1, result[0].ID)
-		assert.Equal(t, "test-name", result[0].Name)
-		assert.Equal(t, "test-email", result[0].Email)
+		assert.Equal(t, 1, len(people))
+		assert.Equal(t, 1, people[0].ID)
+		assert.Equal(t, "test-name", people[0].Name)
+		assert.Equal(t, "test-email", people[0].Email)
 	})
 
 	t.Run("should return a list of people (un-mocked)", func(t *testing.T) {
-		result, err := (&FetchPeople{}).Fetch("https://jsonplaceholder.typicode.com/users")
+		people, err := FetchPeople("https://jsonplaceholder.typicode.com/users")
 		assert.Nil(t, err)
-		assert.Equal(t, 10, len(result))
+		assert.Equal(t, 10, len(people))
+	})
+}
+
+func TestFetchPeopleAsync(t *testing.T) {
+	t.Run("should send error trough a channel when failing", func(t *testing.T) {
+		_, err := (<-FetchPeopleAsync("")).Unwrap()
+		assert.Error(t, err)
+	})
+
+	t.Run("should send results trough a channel when succeeding", func(t *testing.T) {
+		calledWithUrl := "initial value"
+		responseBody := "[{\"id\": 1, \"name\": \"test-name\", \"email\": \"test-email\"}]"
+
+		stub := func(req *fasthttp.Request, resp *fasthttp.Response) error {
+			calledWithUrl = string(req.URI().FullURI())
+			resp.SetBody([]byte(responseBody))
+			return nil
+		}
+
+		fetchPeopleOptions := FetchPeopleOptions{
+			FastHTTPDo: stub,
+		}
+
+		people, err := (<-FetchPeopleAsync("http://test-url", fetchPeopleOptions)).Unwrap()
+		assert.Nil(t, err)
+		assert.Equal(t, "http://test-url/", calledWithUrl)
+		assert.Equal(t, 1, len(people))
+		assert.Equal(t, 1, people[0].ID)
+		assert.Equal(t, "test-name", people[0].Name)
+		assert.Equal(t, "test-email", people[0].Email)
 	})
 }
