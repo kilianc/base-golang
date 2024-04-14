@@ -1,6 +1,9 @@
 #!/bin/sh
 
-go version
+# ensure xgo installed
+go install github.com/xhd2015/xgo/cmd/xgo@latest
+
+xgo version
 
 # succeeds on linux/amd64
 # go version go1.21.5 linux/arm64
@@ -11,5 +14,5 @@ go version
 for i in $(seq 1 100);
 do
   echo "Run $i"
-  go test -gcflags=all=-l
+  xgo test -v ./
 done
