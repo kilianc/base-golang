@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
+	"github.com/xhd2015/xgo/runtime/mock"
 )
 
 func TestFetchPeople(t *testing.T) {
@@ -19,11 +20,9 @@ func TestFetchPeople(t *testing.T) {
 			return fmt.Errorf("test-error")
 		}
 
-		fetchPeopleOptions := FetchPeopleOptions{
-			FastHTTPDo: stub,
-		}
+		mock.Patch(fasthttp.Do, stub)
 
-		people, err := FetchPeople("http://test-url", fetchPeopleOptions)
+		people, err := FetchPeople("http://test-url")
 		assert.Nil(t, people)
 		assert.Error(t, err, "test-error", fmt.Errorf("test-error"))
 	})
@@ -38,11 +37,9 @@ func TestFetchPeople(t *testing.T) {
 			return nil
 		}
 
-		fetchPeopleOptions := FetchPeopleOptions{
-			FastHTTPDo: stub,
-		}
+		mock.Patch(fasthttp.Do, stub)
 
-		people, err := FetchPeople("http://test-url", fetchPeopleOptions)
+		people, err := FetchPeople("http://test-url")
 		assert.Nil(t, err)
 		assert.Equal(t, "http://test-url/", calledWithUrl)
 		assert.Equal(t, 1, len(people))

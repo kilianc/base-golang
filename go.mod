@@ -3,9 +3,9 @@ module github.com/kilianc/base-golang
 go 1.21.5
 
 require (
-	github.com/agiledragon/gomonkey/v2 v2.11.0
 	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fasthttp v1.51.0
+	github.com/xhd2015/xgo/runtime v1.0.24
 )
 
 require (
